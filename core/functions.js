@@ -45,6 +45,12 @@ function objKeys(obj) {
     return result;
 }
 
+function objValues(obj) {
+    return objKeys(obj).map(function (p) {
+        return obj[p];
+    });
+}
+
 // Type checking functions
 function isUndefined(value) {
     return typeof value === 'undefined';
@@ -430,6 +436,28 @@ function assertNotHasOwnProperty(name, context) {
     }
 }
 
+// Object.defineProperty shim
+function defineGetter(obj, prop, fn) {
+    Object.prototype.__defineGetter__.call(obj, prop, fn);
+    return obj;
+}
+
+function defineSetter(obj, prop, fn) {
+    Object.prototype.__defineSetter__.call(obj, prop, fn);
+    return obj;
+}
+
+// Creates a property, which is a link to some target property
+function definePropertyLink(obj, propLink, propTarget) {
+    defineGetter(obj, propLink, function () {
+        return this[propTarget];
+    });
+    defineSetter(obj, propLink, function (value) {
+        this[propTarget] = value;
+    });
+    return obj;
+}
+
 
 
 // ------------------------------------------------------------------
@@ -510,6 +538,7 @@ extend(bitsurf, {
     uppercase: uppercase,
     capitalize: capitalize,
     keys: objKeys,
+    values: objValues,
     isUndefined: isUndefined,
     isDefined: isDefined,
     isObject: isObject,
@@ -550,6 +579,9 @@ extend(bitsurf, {
     assertArg: assertArg,
     assertArgFn: assertArgFn,
     assertNotHasOwnProperty: assertNotHasOwnProperty,
+    defineGetter: defineGetter,
+    defineSetter: defineSetter,
+    definePropertyLink: definePropertyLink,
     HashMap: HashMap,
     bootstrap: bootstrap
 });
