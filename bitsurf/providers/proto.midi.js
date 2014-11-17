@@ -206,8 +206,8 @@ module.config(function ($protoProvider, $streamProvider) {
         portsOutCounter = 0;
 
     $protoProvider.register('midi', function (config) {
-        var inputStream = MidiStream(),
-            outputStream = MidiStream();
+        var inputStream = new MidiStream(),
+            outputStream = new MidiStream();
         if (!bitsurf.isObject(config)) {
             throw TypeError('Configuration object expected');
         }

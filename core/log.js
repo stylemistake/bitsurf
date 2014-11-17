@@ -11,6 +11,20 @@ function getTabs(depth) {
     return str;
 }
 
+var FUNC_NAME_REGEX = /function (.{1,})\(/,
+    OBJ_NAME_REGEX = /object (.*)\]/;
+function getConstructorName(obj) { 
+    var result;
+    if (obj.constructor && obj.constructor.toString) {
+        result = (FUNC_NAME_REGEX).exec(obj.constructor.toString());
+    } else {
+        result = (OBJ_NAME_REGEX).exec(Object.prototype.toString.call(obj));
+    }
+    return (result && result.length > 1 && result[1] !== 'Object')
+        ? result[1] + ' '
+        : '';
+}
+
 function getStrRepr(obj, depth) {
     var str = '';
     if (!depth) {
@@ -55,12 +69,12 @@ function getStrRepr(obj, depth) {
         bitsurf.forEach(obj, function (value, key) {
             if (isEmpty) {
                 isEmpty = false;
-                str += '{} ->'
+                str += getConstructorName(obj) + '{} ->'
             }
             str += '\n' + getTabs(depth+1);
             str += key + ': ' + getStrRepr(value, depth+1);
         });
-        if (isEmpty) str += '{}';
+        if (isEmpty) str += getConstructorName(obj) + '{}';
         return str;
     }
     return obj;
