@@ -18,9 +18,9 @@ module.config(function ($protoProvider, $streamProvider) {
     bitsurf.extend(MidiStream.prototype, Stream.prototype);
 
     MidiStream.prototype.setMidiInPort = function (port) {
-        var self = this,
-            midiIn = host.getMidiInPort(port);
+        var self = this, midiIn;
         try {
+            midiIn = host.getMidiInPort(port);
             // Add callback to feed messages to stream
             midiIn.setMidiCallback(function (a, b, c) {
                 var m = new MidiMessage(a, b, c);
@@ -30,14 +30,32 @@ module.config(function ($protoProvider, $streamProvider) {
             // Save port in array for later use
             this.ports.push(port);
         } catch (e) {
-            host.errorln("MidiStream: Couldn't add midi port.");
             host.errorln(e);
             host.errorln(
-                "MidiStream: It is possible, that you've assigned a greater " + 
-                "port than available in BWS settings. Try restarting the DAW."
+                'MidiStream: MidiIn port ' + port + ' is not available. ' + 
+                'Try restarting the host.'
             );
         }
     };
+
+    MidiStream.prototype.setMidiOutPort = function (port) {
+        var self = this, midiOut;
+        try {
+            midiOut = host.getMidiOutPort(port);
+            // Add callback to feed messages to stream
+            this.where('port', port).each(function (m) {
+                midiOut.send(m.status, m.data1, m.data2);
+            });
+            // Save port in array for later use
+            this.ports.push(port);
+        } catch (e) {
+            host.errorln(e);
+            host.errorln(
+                'MidiStream: MidiOut port ' + port + ' is not available. ' + 
+                'Try restarting the host.'
+            );
+        }
+    }
 
     MidiStream.prototype.send = function (status, data1, data2) {
         if (status instanceof MidiMessage) {
@@ -75,12 +93,12 @@ module.config(function ($protoProvider, $streamProvider) {
         MidiMessage.prototype, "type",
         function () {
             if (this.isNote()) return "note";
-            if (this.isControl()) return "cc";
+            if (this.isControlChange()) return "cc";
             if (this.isProgramChange()) return "pc";
             if (this.isKeyPressure()) return "kp";
             if (this.isChannelPressure()) return "kp";
             if (this.isPitchbend()) return "pb";
-            return null;
+            return "other";
         }
     );
 
@@ -215,16 +233,28 @@ module.config(function ($protoProvider, $streamProvider) {
         var portsIn = config.portsIn,
             portsOut = config.portsOut;
 
+        function invokeLater(fn, context, args) {
+            return function() {
+                fn.apply(context, args);
+            }
+        }
+
         if (bitsurf.isNumber(portsIn)) {
             for (var i = 0; i < portsIn; i += 1) {
-                input.setMidiInPort(portsInCounter + i);
+                bitsurf.onInit(invokeLater(
+                    inputStream.setMidiInPort,
+                    inputStream, [portsInCounter + i]
+                ));
             }
             portsInCounter += portsIn;
         }
 
         if (bitsurf.isNumber(portsOut)) {
             for (var i = 0; i < portsOut; i += 1) {
-                output.ports.push(portsOutCounter + i);
+                bitsurf.onInit(invokeLater(
+                    outputStream.setMidiOutPort,
+                    outputStream, [portsOutCounter + i]
+                ));
             }
             portsOutCounter += portsOut;
         }

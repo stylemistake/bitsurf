@@ -4,6 +4,117 @@
 // Manages async data in a lazy manner with an MQ-like interface
 // with filters and more.
 module.provider('$stream', function () {
+
+    // ------------------------------------------------------------------
+    //  StreamSelectorExpression
+    // ------------------------------------------------------------------
+
+    // TODO: Needs extensive test coverage
+    function StreamSelectorExpression(expr) {
+        var self = this;
+
+        this.span = 0;
+
+        if (bitsurf.isString(expr)) {
+            if (SELECTOR_RULE_REGEX.test(expr)) {
+                expr = this.constructor.parse(expr);
+            } else {
+                this.value = expr;
+                return;
+            }
+        } else if (!bitsurf.isObject(expr)) {
+            throw Error("SelectorExpression: invalid expression, '" + expr + "'");
+        }
+
+        this.values = [];
+        this.ranges = [];
+
+        // Sorting selectors, ranges before values
+        expr.sort(function (a, b) {
+            var r, aa = (typeof a !== 'number') ? 1 : 0,
+                   bb = (typeof b !== 'number') ? 1 : 0;
+            if (aa) a = a[0];
+            if (bb) b = b[0];
+            r = a - b;
+            if (r == 0) r = bb - aa;
+            return r;
+        });
+
+        // Compaction magic, don't touch this :3
+        var start = (typeof expr[0] !== 'number') ? expr[0][0] : null,
+            end = (typeof expr[0] !== 'number') ? expr[0][1] : null;
+        bitsurf.forEach(expr, function (item) {
+            if (typeof item !== 'number') {
+                if (start === null) {
+                    start = item[0];
+                    end = item[1];
+                }
+                if (item[0] > end) {
+                    self.ranges.push([start,end]);
+                    self.span += end - start;
+                    start = item[0];
+                    end = item[1];
+                } else if (item[1] > end) {
+                    end = item[1];
+                }
+            } else {
+                if (start === null && end === null) {
+                    self.values.push(item);
+                    self.span += 1;
+                    end = item;
+                }
+                if (item > end) {
+                    if (start !== null) {
+                        self.ranges.push([start,end]);
+                        self.span += end - start;
+                        start = null;
+                    }
+                    self.values.push(item);
+                    self.span += 1;
+                    end = item;
+                }
+            }
+        });
+        if (start !== null) {
+            this.ranges.push([start,end]);
+            this.span += end - start;
+        }
+    }
+
+    var SELECTOR_RULE_REGEX = /^((0x)?[0-9a-f]+)((,|-)(0x)?[0-9a-f]+)+$/i;
+    StreamSelectorExpression.parse = function (expr) {
+        var items = expr.split(','),
+            values, result = [];
+        bitsurf.forEach(items, function (item, key) {
+            values = item.split('-');
+            if (values.length <= 0 || values.length > 2) {
+                throw Error("SelectorExpression: invalid selector, '" + item + "'");
+            } else
+            if (values.length == 2) {
+                values[0] = parseInt(values[0]);
+                values[1] = parseInt(values[1]);
+                if (values[0] === NaN || values[1] === NaN) {
+                    throw Error("SelectorExpression: not a number, '" + item + "'");
+                }
+                if (values[0] >= values[1]) {
+                    throw Error("SelectorExpression: invalid range, '" + item + "'");
+                }
+                result.push(values);
+            } else {
+                values[0] = parseInt(values[0]);
+                if (values[0] === NaN) {
+                    throw Error("SelectorExpression: not a number, '" + item + "'");
+                }
+                result.push(values[0]);
+            }
+        });
+        return result;
+    };
+
+    // ------------------------------------------------------------------
+    //  Stream
+    // ------------------------------------------------------------------
+
     function Stream( parent ) {
         this.parent = parent;
         this.modifiers = {};
@@ -33,22 +144,34 @@ module.provider('$stream', function () {
     // Filter by property
     Stream.prototype.where = function( a, b ) {
         if ( typeof a === "object" ) {
-            // TODO: Catch illegal items
-            return this.filter( function( item ) {
-                var status = true;
-                Object.keys( a ).forEach( function( i ) {
-                    if ( item[ i ] != a[ i ] ) {
-                        return status = false;
-                    }
-                });
-                return status;
-            });
+            var result = this;
+            bitsurf.forEach(a, function (rule, key) {
+                result = result.where(key, rule);
+            })
+            return result;
         } else
         if ( typeof a === "string" ) {
-            // TODO: Catch illegal items
-            return this.filter( function( item ) {
-                return item[ a ] == b;
-            });
+            if (bitsurf.isArray(b)) {
+                return this.filter(function (item) {
+                    var i, ii;
+                    for (i = 0, ii = b.length; i < ii; i += 1) {
+                        if (typeof b[i] === 'object') {
+                            if (item[a] > b[i][0] && item[a] < b[i][1]) {
+                                return true;
+                            }
+                        } else {
+                            if (item[a] == b[i]) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                });
+            } else {
+                return this.filter(function (item) {
+                    return item[a] == b;
+                });
+            }
         }
         return this;
     };
@@ -203,6 +326,8 @@ module.provider('$stream', function () {
     }
 
     return {
+        Stream: Stream,
+        SelectorExpr: StreamSelectorExpression,
         $get: function () {
             return Stream;
         }
