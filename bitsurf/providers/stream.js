@@ -20,7 +20,7 @@ module.provider('$stream', function () {
 
     // 
 
-    // Filter data before giving to consumers
+    // Filter with a function
     Stream.prototype.filter = function( fun ) {
         if (typeof fun === 'undefined') {
             return this;
@@ -30,6 +30,7 @@ module.provider('$stream', function () {
         return s;
     };
 
+    // Filter by property
     Stream.prototype.where = function( a, b ) {
         if ( typeof a === "object" ) {
             // TODO: Catch illegal items
@@ -67,6 +68,7 @@ module.provider('$stream', function () {
         return s;
     };
 
+    // Invoke
     Stream.prototype.invoke = function( name, args ) {
         var s = new this.constructor( this );
         s.modifiers.map = function( item ) {

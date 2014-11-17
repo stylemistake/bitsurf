@@ -223,9 +223,9 @@ function createInjector(modulesToLoad, strictDi) {
             }
 
             var args = [],
-                    $inject = annotate(fn, strictDi, serviceName),
-                    length, i,
-                    key;
+                $inject = annotate(fn, strictDi, serviceName),
+                length, i,
+                key;
 
             for (i = 0, length = $inject.length; i < length; i++) {
                 key = $inject[i];

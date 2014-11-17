@@ -35,11 +35,17 @@ ensure(bitsurf, 'module', function() {
                 _runBlocks: runBlocks,
                 requires: requires,
                 name: name,
+
+                // Core methods
                 provider: invokeLater('$provide', 'provider'),
                 factory: invokeLater('$provide', 'factory'),
                 service: invokeLater('$provide', 'service'),
                 value: invokeLater('$provide', 'value'),
                 constant: invokeLater('$provide', 'constant', 'unshift'),
+
+                // Bitsurf shorthand methods
+                device: invokeLater('$deviceProvider', 'register'),
+
                 config: config,
                 run: function(block) {
                     runBlocks.push(block);

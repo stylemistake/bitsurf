@@ -28,7 +28,7 @@ module.config(function ($protoProvider, $streamProvider) {
                 self.push(m);
             });
             // Save port in array for later use
-            this.ports.push(midiIn);
+            this.ports.push(port);
         } catch (e) {
             host.errorln("MidiStream: Couldn't add midi port.");
             host.errorln(e);
@@ -202,34 +202,42 @@ module.config(function ($protoProvider, $streamProvider) {
     //  Protocol constructor
     // ------------------------------------------------------------------
 
+    var portsInCounter = 0,
+        portsOutCounter = 0;
+
     $protoProvider.register('midi', function (config) {
         var inputStream = MidiStream(),
             outputStream = MidiStream();
-            // filterBy = {},
-            // filterables = ['channel','type']
         if (!bitsurf.isObject(config)) {
             throw TypeError('Configuration object expected');
         }
-        if (bitsurf.isNumber(config.port)) {
-            input.setMidiInPort(config.port);
-            delete config.port;
-        } else if (bitsurf.isArray(config.port)) {
-            bitsurf.forEach(config.port, function (value) {
-                input.setMidiInPort(value);
-            });
-        } else {
-            throw TypeError('Port expected');
+
+        var portsIn = config.portsIn,
+            portsOut = config.portsOut;
+
+        if (bitsurf.isNumber(portsIn)) {
+            for (var i = 0; i < portsIn; i += 1) {
+                input.setMidiInPort(portsInCounter + i);
+            }
+            portsInCounter += portsIn;
         }
-        // bitsurf.forEach(config, function (value, key) {
-        //     if (filterables.indexOf(key) >= 0) {
-        //         filterBy[key] = value;
-        //     }
-        // });
+
+        if (bitsurf.isNumber(portsOut)) {
+            for (var i = 0; i < portsOut; i += 1) {
+                output.ports.push(portsOutCounter + i);
+            }
+            portsOutCounter += portsOut;
+        }
+
+        host.defineMidiPorts(portsInCounter, portsOutCounter);
+
         return {
             input: inputStream,
-            output: outputStream
+            output: outputStream,
+            config: config
         };
     });
+
 });
 
 })(bitsurf, bitsurf.module('bitsurf'));
