@@ -130,7 +130,7 @@ function forEach(obj, iterator, context) {
             obj.forEach(iterator, context, obj);
         } else {
             for (key in obj) {
-                if (obj.hasOwnProperty(key)) {
+                if (obj.hasOwnProperty && obj.hasOwnProperty(key)) {
                     iterator.call(context, obj[key], key, obj);
                 }
             }
