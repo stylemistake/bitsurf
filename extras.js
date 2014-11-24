@@ -11,10 +11,10 @@
 
 // Initialize bitsurf core functions if bitsurf wasn't loaded
 if (typeof bitsurf === 'undefined') {
+    loadAPI(1);
     var bitsurf = function () {};
     load('core/functions.js');
     load('core/log.js');
-    load('core/inithooks.js');
 }
 
 // Add `angular` namespace for compatibility with angular modules
