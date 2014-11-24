@@ -9,6 +9,14 @@
 //  should only be dependent on bitsurf and other modules.
 // --------------------------------------------------------
 
+// Initialize bitsurf core functions if bitsurf wasn't loaded
+if (typeof bitsurf === 'undefined') {
+    var bitsurf = function () {};
+    load('core/functions.js');
+    load('core/log.js');
+    load('core/inithooks.js');
+}
+
 // Add `angular` namespace for compatibility with angular modules
 var angular = angular || bitsurf;
 
