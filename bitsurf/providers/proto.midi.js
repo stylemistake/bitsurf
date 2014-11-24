@@ -134,10 +134,10 @@ module.config(function ($protoProvider, $streamProvider) {
     bitsurf.definePropertyLink(MidiMessage.prototype, "note", "data1");
 
     // msg.value
-    bitsurf.definePropertyLink(MidiMessage.prototype, "value", "data1");
+    bitsurf.definePropertyLink(MidiMessage.prototype, "value", "data2");
 
     // msg.velocity
-    bitsurf.definePropertyLink(MidiMessage.prototype, "velocity", "data1");
+    bitsurf.definePropertyLink(MidiMessage.prototype, "velocity", "data2");
 
     // MidiMessage methods
     MidiMessage.prototype.inRange = function (prop, a, b) {
@@ -147,8 +147,8 @@ module.config(function ($protoProvider, $streamProvider) {
 
     MidiMessage.prototype.toHex = function (prop) {
         if (prop) {
-            var upper = ( this.valueOf() >> 4 ) & 0x0F,
-                lower = this.valueOf() & 0x0F;
+            var upper = ( this[prop] >> 4 ) & 0x0F,
+                lower = this[prop] & 0x0F;
             return upper.toString( 16 ) + lower.toString( 16 );
         } else {
             return this.toHex('status') +

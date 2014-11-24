@@ -45,6 +45,7 @@ ensure(bitsurf, 'module', function() {
 
                 // Bitsurf shorthand methods
                 device: invokeLater('$deviceProvider', 'register'),
+                control: invokeLater('$controlProvider', 'register'),
 
                 config: config,
                 run: function(block) {
